@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penjualan - Shop</title>
+  <style>
+    table,
+    th,
+    td {
+      border: 1px solid black;
+    }
+
+    th,
+    td {
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body style="padding: 30px">
+
+  <section>
+    <div style="margin-bottom: 20px;" id="form">
+      <input type="text" id="nama_pelanggan" placeholder="Nama pelanggan" value="Pelanggan 1" required>
+      <select id="id_barang"></select>
+      <input type="number" id="jumlah" min="1" max="200" placeholder="Jumlah" autofocus required>
+      <button type="button" id="submit">tambah</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Nama Pelanggan</th>
+          <th>Nama Barang</th>
+          <th>Harga</th>
+          <th>Total</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="result"></tbody>
+    </table>
+    <tfoot>
+      <p>Total: Rp<span id="total">0</span></p>
+    </tfoot>
+
+  </section>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    const simpanPenjualan = async (event) => {
+      event.preventDefault();
+      let namaPelanggan = document.getElementById('nama_pelanggan').value;
+      let idBarang = document.getElementById('id_barang').value;
+      let jumlah = document.getElementById('jumlah').value;
+      let barang = await periksaBarang(idBarang);
+      if (!barang) {
+        alert('Data barang tidak ada!');
+      } else {
+        await axios.post('http://localhost:3000/penjualan', {
+          nama_pelanggan: namaPelanggan,
+          nama_barang: barang.nama,
+          harga: parseInt(barang.harga),
+          jumlah: parseInt(jumlah),
+          total: jumlah * barang.harga,
+        })
+          .then((response) => {
+            document.getElementById('jumlah').value = 1;
+            ambilPenjualan();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', simpanPenjualan);
+
+    const periksaBarang = async (id) => {
+      try {
+        const response = await axios.get(`http://localhost:3000/barang/${id}`);
+        return response.data;
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    const ambilBarang = async () => {
+      await axios.get(`http://localhost:3000/barang`)
+        .then((response) => {
+          const barang = response.data;
+          let bucket = '<option value="null">Pilih</option>';
+          if (barang.length > 0) {
+            barang.forEach((item, index) => {
+              bucket += `<option value="${item.id}">${item.nama}</option>`
+            });
+          }
+          document.getElementById('id_barang').innerHTML = bucket;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    ambilBarang();
+
+    const ambilPenjualan = async () => {
+      await axios.get(`http://localhost:3000/penjualan`)
+        .then((response) => {
+          const penjualan = response.data;
+          let bucket = '';
+          let total = 0;
+          if (penjualan.length > 0) {
+            penjualan.forEach((item, index) => {
+              let jumlah = parseInt(item.jumlah);
+              let harga = parseInt(item.harga);
+              bucket += `
+              <tr>
+                <td>${index + 1}</td>
+                <th>${item.nama_pelanggan}</th>
+                <td>${item.nama_barang}</td>
+                <td>${jumlah.toLocaleString('id-ID')} @ Rp${harga.toLocaleString('id-ID')}</td>
+                <td>Rp${(jumlah * harga).toLocaleString('id-ID')}</td>
+                <td>
+                  <button type="button" onclick="hapusPenjualan('${item.id}')">batal</button>
+                </td>
+              </tr>`
+              total += jumlah * harga;
+            });
+          } else {
+            bucket += `<tr><td colspan="6">Penjualan belum tersedia</td></tr>`
+          }
+          document.getElementById('result').innerHTML = bucket;
+          document.getElementById('total').innerText = total.toLocaleString('id-ID');
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    ambilPenjualan();
+
+    const hapusPenjualan = async (id) => {
+      await axios.delete(`http://localhost:3000/penjualan/${id}`)
+        .then((response) => {
+          ambilPenjualan();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+  </script>
+</body>
+
+</html>
