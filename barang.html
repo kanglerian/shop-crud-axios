@@ -76,7 +76,7 @@
           document.getElementById('nama').value = response.data.nama;
           document.getElementById('harga').value = response.data.harga;
           document.getElementById('submit').innerText = 'ubah';
-          document.getElementById('submit').setAttribute('onclick', `perbaruiBarang(${id})`);
+          document.getElementById('submit').setAttribute('onclick', `perbaruiBarang('${id}')`);
           document.getElementById('cancel').style.display = 'inline';
         })
         .catch((error) => {
